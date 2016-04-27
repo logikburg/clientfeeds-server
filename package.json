@@ -1,0 +1,11 @@
+{
+    "name": "file_upload",
+    "version": "0.0.1",
+    "dependencies": {
+        "domutils": "1.5.1",
+        "domhandler": "2.3.0",
+        "htmlparser2": "3.9.0",
+        "mongodb": "2.1.16",
+        "request": "2.72.0"
+    }
+}
