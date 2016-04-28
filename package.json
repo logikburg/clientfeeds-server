@@ -1,5 +1,5 @@
 {
-    "name": "file_upload",
+    "name": "clientfeeds_server",
     "version": "0.0.1",
     "dependencies": {
         "domutils": "1.5.1",
