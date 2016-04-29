@@ -65,8 +65,8 @@ var firstPageRequestHandler = new htmlparser.DomHandler(function (error, dom) {
         // Number of request to fetch all the results from the server (totalPages-1)
         var totalPages = Math.ceil(resultCount / resultSize);
 
-        console.log("resultCount > " + resultCount);
-        console.log("totalPages > " + totalPages);
+        console.log("[DEBUG]: resultCount >" + resultCount);
+        console.log("[DEBUG]: totalPages >" + totalPages);
 
         var nxtC = DomUtils.getElements({
             class: "nxtC"
@@ -77,6 +77,7 @@ var firstPageRequestHandler = new htmlparser.DomHandler(function (error, dom) {
         //&sequence=1&startPage=1
         // extracting the all pages data by requesting each page
         if (totalPages > 1) {
+
             for (var p = 2; p <= totalPages; p++) {
 
                 var paramSequence = "&sequence=" + p;
@@ -88,30 +89,38 @@ var firstPageRequestHandler = new htmlparser.DomHandler(function (error, dom) {
                     headers: headers
                 }
 
-                parser = new htmlparser.Parser(nextPageRequestHandler);
-
+                // Start the request
                 request(options, function (error, response, body) {
                     if (!error && response.statusCode == 200) {
-                        parser.write(body);
-                        parser.end();
+
+                        nextPageParser.write(body);
+                        nextPageParser.end();
                     }
                 })
 
-                //                console.log(options.url);
-                //                break
+                break;
             }
         }
-
-        console.log("first page request handler ends");
     }
+
+    console.log("first page request handler start");
 });
 
-var nextPageRequestHandler = new htmlparser.DomHandler(function (error, dom) {
+var responseHandler = function (response) {
+    //console.log("responseHandler" + nextPageParser.write(response));
+    nextPageParser.write(response);
+    nextPageParser.end();
+
+    //nextPageParser.write.call(self, response);
+
+}
+
+var nextPageRequestParser = new htmlparser.DomHandler(function (error, dom) {
+    console.log("next page request handler start");
+
     if (error) {
         console.log(error);
     } else {
-
-        console.log("next page request handler start");
 
         var mainSearch = DomUtils.getElements({
             class: "main-search-block"
@@ -121,19 +130,13 @@ var nextPageRequestHandler = new htmlparser.DomHandler(function (error, dom) {
             class: "srp-pagination clearfix"
         }, mainSearch);
 
-        // Result Count
-        var resultCountId = DomUtils.getElements({
-            id: "totolResultCountsId"
-        }, mainSearch);
-
-        var resultCount = DomUtils.getChildren(resultCountId[0]);
-        resultCount = resultCount[0].data
+        //console.log(mainSearch);
 
         processRequest(mainSearch);
 
         console.log("next page request handler end");
     }
-})
+});
 
 function processRequest(mainSearch) {
 
@@ -246,6 +249,8 @@ function processRequest(mainSearch) {
 
 var parser = new htmlparser.Parser(firstPageRequestHandler);
 
+var nextPageParser = new htmlparser.Parser(nextPageRequestParser);
+
 // Start the request
 request(options, function (error, response, body) {
     if (!error && response.statusCode == 200) {
@@ -253,9 +258,3 @@ request(options, function (error, response, body) {
         parser.end();
     }
 })
-
-//for (var p = 2; p <= 115; p++) {
-//    var paramSequence = "&sequence=" + p;
-//    var paramStartPage = "&startPage=" + (Math.floor(p / 10) * 10 + 1);
-//    console.log(paramStartPage);
-//}
