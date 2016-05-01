@@ -106,14 +106,6 @@ var firstPageRequestHandler = new htmlparser.DomHandler(function (error, dom) {
     console.log("first page request handler start");
 });
 
-var responseHandler = function (response) {
-    //console.log("responseHandler" + nextPageParser.write(response));
-    nextPageParser.write(response);
-    nextPageParser.end();
-
-    //nextPageParser.write.call(self, response);
-
-}
 
 var nextPageRequestParser = new htmlparser.DomHandler(function (error, dom) {
     console.log("next page request handler start");
