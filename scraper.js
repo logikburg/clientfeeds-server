@@ -27,22 +27,20 @@ var options = {
 }
 
 var batchJobStoreHelper;
+var colJobList;
 
 // Connect to the db
-mgoClient.connect("mongodb://localhost:27017/jobsDB", function (err, db) {
+mgoClient.connect("mongodb://localhost:27017/jobsDB", function(err, db) {
     if (!err) {
         console.log("database is connected");
-        var colJobList = db.collection('joblist');
-
-        // Initialize the Ordered Batch
-        batchJobStoreHelper = colJobList.initializeOrderedBulkOp()
+        colJobList = db.collection('joblist');
     }
 })
 
 //var fields = [];
 var objJob = new Object();
 
-var firstPageRequestHandler = new htmlparser.DomHandler(function (error, dom) {
+var firstPageRequestHandler = new htmlparser.DomHandler(function(error, dom) {
     if (error) {
         console.log(error);
     } else {
@@ -64,9 +62,6 @@ var firstPageRequestHandler = new htmlparser.DomHandler(function (error, dom) {
 
         // Number of request to fetch all the results from the server (totalPages-1)
         var totalPages = Math.ceil(resultCount / resultSize);
-
-        console.log("[DEBUG]: resultCount >" + resultCount);
-        console.log("[DEBUG]: totalPages >" + totalPages);
 
         var nxtC = DomUtils.getElements({
             class: "nxtC"
@@ -90,24 +85,24 @@ var firstPageRequestHandler = new htmlparser.DomHandler(function (error, dom) {
                 }
 
                 // Start the request
-                request(options, function (error, response, body) {
+                request(options, function(error, response, body) {
                     if (!error && response.statusCode == 200) {
-
+                        nextPageParser.reset();
                         nextPageParser.write(body);
                         nextPageParser.end();
                     }
-                })
-
-                break;
+                });
             }
         }
+        
+        console.log("[DEBUG]: resultCount >" + resultCount);
+        console.log("[DEBUG]: totalPages >" + totalPages);
     }
 
     console.log("first page request handler start");
 });
 
-
-var nextPageRequestParser = new htmlparser.DomHandler(function (error, dom) {
+var nextPageRequestParser = new htmlparser.DomHandler(function(error, dom) {
     console.log("next page request handler start");
 
     if (error) {
@@ -121,8 +116,6 @@ var nextPageRequestParser = new htmlparser.DomHandler(function (error, dom) {
         var pagination = DomUtils.getElements({
             class: "srp-pagination clearfix"
         }, mainSearch);
-
-        //console.log(mainSearch);
 
         processRequest(mainSearch);
 
@@ -139,7 +132,10 @@ function processRequest(mainSearch) {
     var ls = DomUtils.getChildren(ul[0]);
     var lis = DomUtils.getElements({
         class: "clearfix joblistli"
-    }, ls)
+    }, ls);
+
+    // Initialize the Ordered Batch
+    batchJobStoreHelper = colJobList.initializeOrderedBulkOp();
 
     for (var li in lis) {
 
@@ -183,6 +179,8 @@ function processRequest(mainSearch) {
         // adding the 'company' field value to job object
         objJob["company"] = company;
 
+        console.log("company > " + objJob["company"]);
+
         var _ul = DomUtils.getElementsByTagName("ul", lis[li]);
 
         // Salary
@@ -224,8 +222,6 @@ function processRequest(mainSearch) {
         // adding the 'tags' field value to job object
         objJob["tags"] = tags;
 
-        //console.log(objJob);
-
         // Batch Insert 
         batchJobStoreHelper.insert(objJob);
     }
@@ -240,11 +236,10 @@ function processRequest(mainSearch) {
 }
 
 var parser = new htmlparser.Parser(firstPageRequestHandler);
-
 var nextPageParser = new htmlparser.Parser(nextPageRequestParser);
 
 // Start the request
-request(options, function (error, response, body) {
+request(options, function(error, response, body) {
     if (!error && response.statusCode == 200) {
         parser.write(body);
         parser.end();
