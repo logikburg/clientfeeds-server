@@ -14,12 +14,12 @@ var mgoClient = mongodb.MongoClient;
 
 // initialize the express module
 var app = express();
-app.set('secret', config.SECRET_KEY); // secret variable
 
 app.use(bodyParser.urlencoded({
     extended: true
 }));
 app.use(bodyParser.json());
+
 
 var colJobs;
 var colUsers;
@@ -34,50 +34,6 @@ mgoClient.connect("mongodb://localhost:27017/jobsDB", function(err, db) {
 });
 
 var userModel = new Object();
-
-apiRoutes.post('/authenticate ', function(req, res) {
-    var email = req.body.email;
-    var password = req.body.password;
-    console.log(email + "::" + password);
-
-    // Fetch the document
-    colUsers.findOne({
-        email: email,
-        password: password
-    }, function(err, user) {
-        if (err) {
-            res.json({
-                type: false,
-                data: "Error occured: " + err
-            });
-        } else {
-            if (user) {
-                res.json({
-                    type: false,
-                    data: "User already exists!"
-                });
-            } else {
-                userModel.email = req.body.email;
-                userModel.password = req.body.password;
-                // sign with RSA SHA256
-                var cert = fs.readFileSync('private.key'); // get private key
-                userModel.token = jwt.sign(userModel, cert, {
-                    algorithm: 'RS256',
-                    expiresInMinutes: 1440 // expires in 24 hours
-                });
-                colUsers.insert(userModel, function(err, user) {
-                    console.log(user);
-                    res.json({
-                        type: true,
-                        data: user,
-                        token: user.token
-                    });
-                });
-            }
-        }
-    });
-});
-
 
 // Add headers
 app.use(function(req, res, next) {
@@ -140,12 +96,51 @@ apiRoutes.get('/listJobs', function(req, res) {
     })
 });
 
+apiRoutes.post('/authenticate ', function(req, res) {
+    var email = req.body.email;
+    var password = req.body.password;
+    console.log(email + "::" + password);
+
+    // Fetch the document
+    colUsers.findOne({
+        email: email,
+        password: password
+    }, function(err, user) {
+        if (err) {
+            res.json({
+                type: false,
+                data: "Error occured: " + err
+            });
+        } else {
+            if (user) {
+                res.json({
+                    type: false,
+                    data: "User already exists!"
+                });
+            } else {
+                userModel.email = req.body.email;
+                userModel.password = req.body.password;
+                // sign with RSA SHA256
+                var cert = fs.readFileSync('private.key'); // get private key
+                userModel.token = jwt.sign(userModel, cert, {
+                    algorithm: 'RS256',
+                    expiresInMinutes: 1440 // expires in 24 hours
+                });
+                colUsers.insert(userModel, function(err, user) {
+                    console.log(user);
+                    res.json({
+                        type: true,
+                        data: user,
+                        token: user.token
+                    });
+                });
+            }
+        }
+    });
+});
+
 // apply the routes to our application with the prefix /api
 app.use('/api', apiRoutes);
-
-//process.on('uncaughtException', function(err) {
-//    console.log(err);
-//});
 
 var server = app.listen(8081, function() {
     var host = server.address().address;
