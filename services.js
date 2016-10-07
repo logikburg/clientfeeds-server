@@ -162,7 +162,7 @@ app.post('/api/authenticate', textParser, function(req, res, next) {
                 userModel.token = jwt.sign(userModel, cert, {
                     expiresIn: "10h" // expires in 24 hours
                 });
-                    
+
                 console.log(username + "::" + userModel.token);
 
                 colLoginLogs.update({
@@ -302,8 +302,12 @@ apiRoutes.get('/getlatest', function(req, res) {
 });
 
 
-apiRoutes.post('/setprofile', function(req, res) {
-    console.log("/setprofile");
+apiRoutes.post('/savesetting', function(req, res) {
+    console.log("/savesetting");
+    return res.json({
+        success: true,
+        data: 'ok'
+    });
 
 });
 
